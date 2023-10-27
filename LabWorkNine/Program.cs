@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -20,8 +20,9 @@ namespace LabWorkNine
 
         static public async Task<double> GetAverageAsync(string ticker)
         {
-            string apiUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1=1665223608&period2=1696759608&interval=1d&events=history&includeAdjustedClose=true";
-           // Console.WriteLine(apiUrl);
+           
+           string apiUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1=1665223608&period2=1696759608&interval=1d&events=history&includeAdjustedClose=true";
+         
             using (HttpClient client = new HttpClient())
             {
                 string responseBody = await client.GetStringAsync(apiUrl);
@@ -52,15 +53,28 @@ namespace LabWorkNine
 
     class Program
     {
+      
         static async Task Main()
         {
             List<string> tickers = Finance.ReadFromFile();
+            Console.WriteLine("File has been opened");
             Dictionary<string, double> data = new Dictionary<string, double>();
-            foreach (var ticker in tickers)
+            await Launch(tickers);
+            Console.WriteLine("Launched");
+
+            async Task Launch(List<string> tickers)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1)); 
-                double averagePrice = await Finance.GetAverageAsync(ticker);
-                data.Add(ticker, averagePrice);
+                var tasks = new List<Task>();
+                foreach (var tick in tickers)
+                {
+                    tasks.Add(Buff(tick));
+                }
+                await Task.WhenAll(tasks);
+            }
+
+            async Task Buff(string ticker)
+            {
+                data.Add(ticker, await Finance.GetAverageAsync(ticker));
             }
 
             string filePath = @"C:\Users\gkras\OneDrive\Рабочий стол\Result.txt";
@@ -68,12 +82,14 @@ namespace LabWorkNine
             {
                 foreach (var dt in data)
                 {
-                    writer.WriteLine(dt.Key + ":" + dt.Value);
+                    await writer.WriteLineAsync(dt.Key + ":" + dt.Value);
                 }
             }
 
             Console.WriteLine("Строки успешно записаны в файл.");
         }
+       
+
     }
 
 }
